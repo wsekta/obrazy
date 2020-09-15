@@ -1,0 +1,51 @@
+close all; clear; clc;
+
+N =  imread('por_03_N_1N.jpg');
+XN = imread('por_03_N_XN.jpg');
+
+bin_N = N(:,:,1) > 80 & N(:,:,2) > 60 & N(:,:,3) > 60;
+bin_XN = XN(:,:,1) < 15 & XN(:,:,2) < 15 & XN(:,:,3) < 15;
+
+pory_bin = bin_N & bin_XN;
+
+pory_bin = imfill(pory_bin, 'holes');
+pory_bin = imclose(pory_bin, strel('disk', 5));
+pory_bin = imfill(pory_bin, 'holes');
+pory_bin = imopen(pory_bin, strel('disk', 11));
+pory_bin = imclose(pory_bin, strel('disk', 8));
+
+imshow(pory_bin);
+pory_size = sum(pory_bin(:)) / 369^2
+%%
+XN_300 = imread('por_03_300_XN.jpg');
+XN_330 = imread('por_03_330_XN.jpg');
+XN_300 = imrotate(XN_300, 60, 'crop');
+XN_330 = imrotate(XN_330, 30, 'crop');
+
+XN = XN .* uint8(~pory_bin);
+XN_300 = XN_300 .* uint8(~pory_bin);
+XN_330 = XN_330 .* uint8(~pory_bin);
+
+kwarc1_bin = (XN(:,:,3) > XN(:,:,2) & XN(:,:,2) > XN(:,:,1)) | ();
+kwarc2_bin = XN_300(:,:,3) > XN_300(:,:,2) & XN_300(:,:,2) > XN_300(:,:,1);
+kwarc3_bin = XN_330(:,:,3) > XN_330(:,:,2) & XN_330(:,:,2) > XN_330(:,:,1);
+
+kwarc1_bin = imclose(kwarc1_bin, strel('disk', 4));
+kwarc2_bin = imclose(kwarc2_bin, strel('disk', 4));
+kwarc3_bin = imclose(kwarc3_bin, strel('disk', 4));
+
+kwarc_bin = kwarc1_bin | kwarc2_bin | kwarc3_bin;
+kwarc_bin = bwareaopen(kwarc_bin, 100);
+kwarc_bin = imerode(kwarc_bin, strel('disk', 3));
+kwarc_bin = imfill(kwarc_bin, 'holes');
+%kwarc_bin = imopen(kwarc_bin, strel('disk', 10));
+
+%imshow(kwarc_bin)
+kwarc_size = sum(kwarc_bin(:)) / 369^2
+
+konturyKwarcu = imdilate(edge(kwarc_bin), ones(3));
+konturyPorow = imdilate(edge(pory_bin), ones(3));
+
+XN_over = imoverlay(XN, konturyPorow, 'blue');
+XN_over = imoverlay(XN_over, konturyKwarcu, 'yellow');
+imshow(XN_over)
